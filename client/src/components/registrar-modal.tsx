@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { insertProductSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/format";
 import { z } from "zod";
 import {
   Dialog,
@@ -14,9 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, Scan, User, Package, Settings } from "lucide-react";
 
 type ProductFormData = z.infer<typeof insertProductSchema>;
 

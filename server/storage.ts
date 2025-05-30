@@ -82,14 +82,20 @@ export class MemStorage implements IStorage {
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const purchasePrice = parseFloat(insertProduct.purchasePrice);
-    const salePrice = (purchasePrice * 1.2).toFixed(2);
+    const profitMargin = insertProduct.profitMargin ? parseFloat(insertProduct.profitMargin) : 20;
+    const salePrice = (purchasePrice * (1 + profitMargin / 100)).toFixed(2);
     const now = new Date();
     
     const product: Product = {
       id: this.nextProductId++,
       name: insertProduct.name,
+      barcode: insertProduct.barcode || null,
       purchasePrice: insertProduct.purchasePrice,
       salePrice: salePrice,
+      profitMargin: profitMargin.toString(),
+      buyerName: insertProduct.buyerName || null,
+      stock: insertProduct.stock || null,
+      minStock: insertProduct.minStock || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -103,13 +109,19 @@ export class MemStorage implements IStorage {
     if (index === -1) return undefined;
     
     const purchasePrice = parseFloat(updateProduct.purchasePrice);
-    const salePrice = (purchasePrice * 1.2).toFixed(2);
+    const profitMargin = updateProduct.profitMargin ? parseFloat(updateProduct.profitMargin) : parseFloat(this.products[index].profitMargin);
+    const salePrice = (purchasePrice * (1 + profitMargin / 100)).toFixed(2);
     
     this.products[index] = {
       ...this.products[index],
       name: updateProduct.name,
+      barcode: updateProduct.barcode || this.products[index].barcode,
       purchasePrice: updateProduct.purchasePrice,
       salePrice: salePrice,
+      profitMargin: profitMargin.toString(),
+      buyerName: updateProduct.buyerName || this.products[index].buyerName,
+      stock: updateProduct.stock !== undefined ? updateProduct.stock : this.products[index].stock,
+      minStock: updateProduct.minStock !== undefined ? updateProduct.minStock : this.products[index].minStock,
       updatedAt: new Date(),
     };
     
@@ -128,19 +140,24 @@ export class MemStorage implements IStorage {
   async getAllBusinessNews(): Promise<BusinessNews[]> {
     const now = new Date();
     return this.businessNews
-      .filter(news => new Date(news.expiresAt) > now)
+      .filter(news => news.isPermanent || (news.expiresAt && new Date(news.expiresAt) > now))
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   async createBusinessNews(insertNews: InsertBusinessNews): Promise<BusinessNews> {
     const now = new Date();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 3); // Expires in 3 days
+    let expiresAt = null;
+    
+    if (!insertNews.isPermanent) {
+      expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 3); // Expires in 3 days
+    }
     
     const news: BusinessNews = {
       id: this.nextNewsId++,
       title: insertNews.title,
       content: insertNews.content,
+      isPermanent: insertNews.isPermanent || false,
       createdAt: now,
       expiresAt: expiresAt,
     };
