@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Product } from "@shared/schema";
+import { formatCurrency, calculateProfit, calculateProfitMargin } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Search } from "lucide-react";
+import { Calculator, Search, TrendingUp, DollarSign } from "lucide-react";
 
 interface PrecioVentaModalProps {
   onClose: () => void;
@@ -109,29 +110,51 @@ export default function PrecioVentaModal({ onClose }: PrecioVentaModalProps) {
                   </Badge>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Precio de Compra</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      ${selectedProduct.purchasePrice}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <DollarSign className="h-4 w-4 text-gray-600 mr-2" />
+                      <p className="text-sm text-gray-600">Precio de Compra</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(selectedProduct.purchasePrice)}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Precio de Venta</p>
-                    <p className="text-xl font-bold text-green-600">
-                      ${selectedProduct.salePrice}
+                  
+                  <div className="bg-white p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
+                      <p className="text-sm text-gray-600">Precio de Venta</p>
+                    </div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(selectedProduct.salePrice)}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white p-4 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <Calculator className="h-4 w-4 text-blue-600 mr-2" />
+                      <p className="text-sm text-gray-600">Ganancia</p>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {formatCurrency(calculateProfit(selectedProduct.salePrice, selectedProduct.purchasePrice))}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {calculateProfitMargin(selectedProduct.salePrice, selectedProduct.purchasePrice)}% de margen
                     </p>
                   </div>
                 </div>
-                
-                <div className="mt-4 p-3 bg-white rounded-md">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">Ganancia (20%)</span>
-                    <span className="font-semibold text-green-600">
-                      ${calculateProfit(selectedProduct.salePrice, selectedProduct.purchasePrice)}
-                    </span>
+
+                {selectedProduct.buyerName && (
+                  <div className="mt-4 p-3 bg-white/50 rounded-md">
+                    <div className="flex items-center text-sm">
+                      <span className="text-gray-600">Comprador:</span>
+                      <span className="font-medium text-gray-900 ml-2">
+                        {selectedProduct.buyerName}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           )}
