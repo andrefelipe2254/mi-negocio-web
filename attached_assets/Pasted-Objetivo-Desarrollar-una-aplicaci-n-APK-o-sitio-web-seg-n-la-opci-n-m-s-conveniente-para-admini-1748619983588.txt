@@ -1,0 +1,67 @@
+Objetivo:
+Desarrollar una aplicación (APK o sitio web, según la opción más conveniente) para administrar el inventario, precios y novedades de un negocio. La aplicación estará conectada a una base de datos en línea que muestre los datos en tiempo real.
+
+Especificaciones Generales:
+
+Acceso:
+
+Pantalla de ingreso con usuario y contraseña.
+
+Opción de cerrar sesión visible en una esquina de la interfaz.
+
+Validación:
+
+El nombre de usuario debe ser introducido solo en mayúsculas.
+
+La contraseña debe tener mínimo 8 caracteres y estar compuesta por letras mayúsculas y números.
+
+Base de Datos:
+
+Conexión en tiempo real para reflejar cambios inmediatamente (registros, actualizaciones y eliminaciones).
+
+Interfaz Principal (Después del Login):
+La interfaz principal debe tener las siguientes opciones:
+
+REGISTRAR:
+
+Funcionalidad para registrar nuevos productos.
+
+Restricciones:
+
+El nombre del producto debe ingresarse únicamente en mayúsculas.
+
+El precio de compra debe contener solo datos numéricos.
+
+Si no se cumplen las restricciones, desplegar un mensaje de error.
+
+Impedir que un producto se registre más de una vez (no permitir duplicados).
+
+PRECIO VENTA:
+
+Permitir consultar el precio de venta de un producto registrado, ingresando su nombre (en mayúsculas).
+
+Calcular el precio de venta aplicando un 20% de ganancia respecto al precio de compra.
+
+Mostrar una lista de sugerencias o opciones con los productos registrados mientras se ingresa el nombre.
+
+NOVEDADES:
+
+Registrar novedades del negocio (por ejemplo, cambios o nuevos registros de productos, número de proveedores, notas, etc.).
+
+Las novedades deben eliminarse automáticamente a los tres días.
+
+INVENTARIO:
+
+Mostrar una lista alfabética de todos los productos registrados.
+
+Al seleccionar un producto, ofrecer opciones para modificar o eliminar el producto.
+
+Requerimientos Adicionales:
+
+La aplicación debe ser intuitiva, práctica y visualmente atractiva.
+
+Se proporcionarán bocetos de las interfaces de acceso y opciones para guiar el diseño.
+
+Se debe confirmar y aclarar cualquier duda antes de iniciar el desarrollo para asegurar que todas las especificaciones sean comprendidas y cumplidas.
+proporcióname todo, absolutamente todo a detalle.
+“Quiero que seas el mejor programador y saques lo mejor de ti para lograr este objetivo. Por favor, pregúntame si tienes alguna duda antes de comenzar.
