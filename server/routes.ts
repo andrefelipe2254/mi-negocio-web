@@ -1,17 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth as authSetup } from "./auth";
 import { insertProductSchema, updateProductSchema, insertBusinessNewsSchema } from "@shared/schema";
 import { z } from "zod";
 
-function setupAuth(app: Express) {
-  // This will be implemented by the blueprint
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
-  setupAuth(app);
+  authSetup(app);
 
   // Products routes
   app.get("/api/products", async (req, res) => {

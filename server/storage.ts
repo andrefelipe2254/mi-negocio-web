@@ -1,11 +1,8 @@
-import { users, products, businessNews, type User, type InsertUser, type Product, type InsertProduct, type UpdateProduct, type BusinessNews, type InsertBusinessNews } from "@shared/schema";
-import { db } from "./db";
-import { eq, asc, like, lt } from "drizzle-orm";
+import { type User, type InsertUser, type Product, type InsertProduct, type UpdateProduct, type BusinessNews, type InsertBusinessNews } from "@shared/schema";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import createMemoryStore from "memorystore";
 
-const PostgresSessionStore = connectPg(session);
+const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -27,129 +24,147 @@ export interface IStorage {
   deleteBusinessNews(id: number): Promise<boolean>;
   deleteExpiredNews(): Promise<number>;
   
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
-export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+export class MemStorage implements IStorage {
+  sessionStore: session.Store;
+  private users: User[] = [];
+  private products: Product[] = [];
+  private businessNews: BusinessNews[] = [];
+  private nextUserId = 1;
+  private nextProductId = 1;
+  private nextNewsId = 1;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000, // 24 hours
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return this.users.find(user => user.id === id);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+    return this.users.find(user => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const user: User = {
+      id: this.nextUserId++,
+      username: insertUser.username,
+      password: insertUser.password,
+    };
+    this.users.push(user);
     return user;
   }
 
   // Products
   async getAllProducts(): Promise<Product[]> {
-    return await db.select().from(products).orderBy(asc(products.name));
+    return [...this.products].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getProductById(id: number): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
-    return product || undefined;
+    return this.products.find(product => product.id === id);
   }
 
   async getProductByName(name: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.name, name));
-    return product || undefined;
+    return this.products.find(product => product.name === name);
   }
 
   async searchProducts(query: string): Promise<Product[]> {
-    return await db.select().from(products)
-      .where(like(products.name, `%${query.toUpperCase()}%`))
-      .orderBy(asc(products.name))
-      .limit(10);
+    const filtered = this.products.filter(product =>
+      product.name.includes(query.toUpperCase())
+    );
+    return filtered.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 10);
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const purchasePrice = parseFloat(insertProduct.purchasePrice);
     const salePrice = (purchasePrice * 1.2).toFixed(2);
+    const now = new Date();
     
-    const [product] = await db
-      .insert(products)
-      .values({
-        name: insertProduct.name,
-        purchasePrice: insertProduct.purchasePrice,
-        salePrice: salePrice,
-        updatedAt: new Date(),
-      })
-      .returning();
+    const product: Product = {
+      id: this.nextProductId++,
+      name: insertProduct.name,
+      purchasePrice: insertProduct.purchasePrice,
+      salePrice: salePrice,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.products.push(product);
     return product;
   }
 
   async updateProduct(id: number, updateProduct: UpdateProduct): Promise<Product | undefined> {
+    const index = this.products.findIndex(product => product.id === id);
+    if (index === -1) return undefined;
+    
     const purchasePrice = parseFloat(updateProduct.purchasePrice);
     const salePrice = (purchasePrice * 1.2).toFixed(2);
     
-    const [product] = await db
-      .update(products)
-      .set({
-        name: updateProduct.name,
-        purchasePrice: updateProduct.purchasePrice,
-        salePrice: salePrice,
-        updatedAt: new Date(),
-      })
-      .where(eq(products.id, id))
-      .returning();
-    return product || undefined;
+    this.products[index] = {
+      ...this.products[index],
+      name: updateProduct.name,
+      purchasePrice: updateProduct.purchasePrice,
+      salePrice: salePrice,
+      updatedAt: new Date(),
+    };
+    
+    return this.products[index];
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const result = await db.delete(products).where(eq(products.id, id));
-    return result.rowCount > 0;
+    const index = this.products.findIndex(product => product.id === id);
+    if (index === -1) return false;
+    
+    this.products.splice(index, 1);
+    return true;
   }
 
   // Business News
   async getAllBusinessNews(): Promise<BusinessNews[]> {
-    // Only return non-expired news
-    return await db.select().from(businessNews)
-      .where(lt(new Date(), businessNews.expiresAt))
-      .orderBy(asc(businessNews.createdAt));
+    const now = new Date();
+    return this.businessNews
+      .filter(news => new Date(news.expiresAt) > now)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   }
 
   async createBusinessNews(insertNews: InsertBusinessNews): Promise<BusinessNews> {
+    const now = new Date();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 3); // Expires in 3 days
     
-    const [news] = await db
-      .insert(businessNews)
-      .values({
-        ...insertNews,
-        expiresAt,
-      })
-      .returning();
+    const news: BusinessNews = {
+      id: this.nextNewsId++,
+      title: insertNews.title,
+      content: insertNews.content,
+      createdAt: now,
+      expiresAt: expiresAt,
+    };
+    
+    this.businessNews.push(news);
     return news;
   }
 
   async deleteBusinessNews(id: number): Promise<boolean> {
-    const result = await db.delete(businessNews).where(eq(businessNews.id, id));
-    return result.rowCount > 0;
+    const index = this.businessNews.findIndex(news => news.id === id);
+    if (index === -1) return false;
+    
+    this.businessNews.splice(index, 1);
+    return true;
   }
 
   async deleteExpiredNews(): Promise<number> {
-    const result = await db.delete(businessNews)
-      .where(lt(businessNews.expiresAt, new Date()));
-    return result.rowCount;
+    const now = new Date();
+    const initialLength = this.businessNews.length;
+    
+    this.businessNews = this.businessNews.filter(news => new Date(news.expiresAt) > now);
+    
+    return initialLength - this.businessNews.length;
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new MemStorage();
